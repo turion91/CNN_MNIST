@@ -6,9 +6,11 @@ main script, this will build and run the CNN to classify images (So far only tes
 variables.py contains all variables called by the three other scripts. This should be the only file to change as it will allow the user
 to change the image pixel size (default is 28*28) presence or absence of pool layer, number of neurons, conv/pool layers dimensions, presence or 
 abscence of dropout.
+The default parameters and part of the code is based on the official tensorflow tutorials.
 There is also the possibility to only work with 2 classes instead of the 10 present in the regular MNIST datasets.
 There is the possibility to tune the number of conv layers, the hidden layers, and number of neurons.
 Working on both datasets will currently be memory extensive, as well as computation instensive so using tensorflow on a good nvidia GPU is advised (by playing around with the parameters in variables.py, this script can reach an accuracy of 91.72% on the fashion MNIST dataset, but can still be improved).
+The user also will need to change the folder path in variables.py, as well as to have already the fashion MNIST installed, else you can download it on the zalando github (link in CNN_fashion_main.py), else it will by default import the digit MNIST dataset.
 TODO: Add the possibility of regularisation like L2, change CNN_layers and Dense_layers to be less code heavy, find a way to avoid loading 
-the test set in memory.
+the test set in memory. Try other types of weight initialization e.g xavier initializer
  
