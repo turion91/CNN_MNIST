@@ -102,7 +102,7 @@ nb_conv = variables.nb_conv
 nb_dense = variables.nb_dense
 learning_rate = variables.learning_rate
 
-out = {}#dict to store variables
+#dict to store variables
 res = []
 
 for d, c, neurons_1, neurons_2, neurons_3, neurons_4 in product(nb_dense, nb_conv
@@ -112,6 +112,7 @@ for d, c, neurons_1, neurons_2, neurons_3, neurons_4 in product(nb_dense, nb_con
         tf.set_random_seed(42)#seed for reproducibility
         #create the placeholders for x and y
         #calling the variables
+        out = {}
     
         x = tf.placeholder(tf.float32, shape=[None, original_shape])#? 28*28
         y_ = tf.placeholder(tf.float32, shape=[None, nb_labels])#? 10
@@ -181,35 +182,16 @@ for d, c, neurons_1, neurons_2, neurons_3, neurons_4 in product(nb_dense, nb_con
                         batch_ys.append(x2)
                 batch_xs = np.vstack(batch_xs)
                 batch_ys = np.vstack(batch_ys)
-                batch_ys = batch_ys[:,[keep_label_1, keep_label_2]]
-                
-#                test_xs = []
-#                test_ys = []
-#                for x1, x2 in zip(data.test.images, data.test.labels):
-#                    numbers = np.argmax(x2)
-#                    if numbers == keep_label_1:
-#                        test_ys.append(x2)
-#                        test_xs.append(x1)
-#                    if numbers == keep_label_2:
-#                        test_xs.append(x1)
-#                        test_ys.append(x2)
-#                test_xs = np.vstack(test_xs)
-#                test_ys = np.vstack(test_ys)
-#                test_ys = test_ys[:,[keep_label_1, keep_label_2]]
-                
+                batch_ys = batch_ys[:,[keep_label_1, 5]]
                 
                 
                 if nb_labels == 2:
                     if i % 5 == 0 or i == nb_batches-1:
                         train_accuracy = accuracy.eval(feed_dict={
                             x: batch_xs, y_: batch_ys, keep_prob: 1.0})
+                        test_acc = accuracy.eval(feed_dict={x: data.test.images, y_: data.test.labels, keep_prob: 1.0})
+                        out['test_acc_'+str(i)], out['train_acc_'+str(i)] = test_acc, train_accuracy
                         print('step %d, training accuracy %g' % (i, train_accuracy))#Compute and print train accuracy
-#                        accu = accuracy.eval(feed_dict={
-#                            x: test_xs, y_: test_ys, keep_prob: 1.0})
-#                        print('test accuracy %g' % accu)#Compute the test accuracy no dropout
-#                        out['Train_acc_over_time_'+ str(i)] = train_accuracy
-#                        out['Test_acc_over_time_'+ str(i)] = accu
-                        
                     _, summary = sess.run([train_step, summary_op], feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})#dropout of 0.5
                     writer.add_summary(summary, i)
                     
@@ -217,13 +199,9 @@ for d, c, neurons_1, neurons_2, neurons_3, neurons_4 in product(nb_dense, nb_con
                     if i % 5 == 0 or i == nb_batches-1:
                         train_accuracy = accuracy.eval(feed_dict={
                             x: batch[0], y_: batch[1], keep_prob: 1.0})
+                        test_acc = accuracy.eval(feed_dict={x: data.test.images, y_: data.test.labels, keep_prob: 1.0})
+                        out['test_acc_'+str(i)], out['train_acc_'+str(i)] = test_acc, train_accuracy
                         print('step %d, training accuracy %g' % (i, train_accuracy))#Compute and print train accuracy
-#                        accu = accuracy.eval(feed_dict={
-#                            x: data.test.images, y_: data.test.labels, keep_prob: 1.0})
-#                        print('test accuracy %g' % accu)#Compute the test accuracy no dropout
-#                        out['Train_acc_over_time_'+ str(i)] = train_accuracy
-#                        out['Test_acc_over_time_'+ str(i)] = accu
-                        
                     _, summary = sess.run([train_step, summary_op], feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})#dropout of 0.5
                     writer.add_summary(summary, i)
                     
@@ -240,8 +218,7 @@ for d, c, neurons_1, neurons_2, neurons_3, neurons_4 in product(nb_dense, nb_con
                         test_ys.append(x2)
                 test_xs = np.vstack(test_xs)
                 test_ys = np.vstack(test_ys)
-                test_ys = test_ys[:,[keep_label_1, keep_label_2]]
-
+                test_ys = test_ys[:,[keep_label_1, 5]]
                 accu = accuracy.eval(feed_dict={
                     x: test_xs, y_: test_ys, keep_prob: 1.0})
                 print('test accuracy %g' % accu)#Compute the test accuracy no dropout
@@ -302,41 +279,43 @@ for d, c, neurons_1, neurons_2, neurons_3, neurons_4 in product(nb_dense, nb_con
             out['Fashion or Digit'] = path
             #append the dict to res and make a dataframe out of it
             res.append(out)
-            keys = res[0].keys()
-            out_frame = pd.DataFrame(res)
-            #try to convert the dataframe to csv and append each run to the same one
-            #if the path does not exist, it will be created. Skip duplicate rows
-            #and removes empty ones
-            try:
-                out_frame.to_csv(output_path, sep=",", mode='a', index=False)
-                seen = set()
-                for line in fileinput.FileInput(output_path, inplace=1):
-                    if line in seen: continue
-                    seen.add(line)
-                    print (line, )
-                with open(output_path) as input, open(output_corrected_path, 'w', newline='') as output:
-                    writer = csv.writer(output)
-                    for row in csv.reader(input):
-                        if any(field.strip() for field in row):
-                            writer.writerow(row)
-            except:
-                #if an error occurs about the directory existing already, pass
-                try:
-                    os.makedirs((folder_out))
-                except OSError as e:
-                    if e.errno != os.errno.EEXIST:
-                        raise   
-                    pass
-                out_frame.to_csv(output_path, sep=",", mode='a', index=False)
-                seen = set()
-                for line in fileinput.FileInput(output_path, inplace=1):
-                    if line in seen: continue
-                    seen.add(line)
-                    print (line, )
-                with open(output_path) as input, open(output_corrected_path, 'w', newline='') as output:
-                    writer = csv.writer(output)
-                    for row in csv.reader(input):
-                        if any(field.strip() for field in row):
-                            writer.writerow(row)
+
+            
+keys = res[0].keys()
+out_frame = pd.DataFrame(res)
+#try to convert the dataframe to csv and append each run to the same one
+#if the path does not exist, it will be created. Skip duplicate rows
+#and removes empty ones
+try:
+    out_frame.to_csv(output_path, sep=",", mode='a', index=False)
+    seen = set()
+    for line in fileinput.FileInput(output_path, inplace=1):
+        if line in seen: continue
+        seen.add(line)
+        print (line, )
+    with open(output_path) as input, open(output_corrected_path, 'w', newline='') as output:
+        writer = csv.writer(output)
+        for row in csv.reader(input):
+            if any(field.strip() for field in row):
+                writer.writerow(row)
+except:
+    #if an error occurs about the directory existing already, pass
+    try:
+        os.makedirs((folder_out))
+    except OSError as e:
+        if e.errno != os.errno.EEXIST:
+            raise   
+        pass
+    out_frame.to_csv(output_path, sep=",", mode='a', index=False)
+    seen = set()
+    for line in fileinput.FileInput(output_path, inplace=1):
+        if line in seen: continue
+        seen.add(line)
+        print (line, )
+    with open(output_path) as input, open(output_corrected_path, 'w', newline='') as output:
+        writer = csv.writer(output)
+        for row in csv.reader(input):
+            if any(field.strip() for field in row):
+                writer.writerow(row)
                     
                 
